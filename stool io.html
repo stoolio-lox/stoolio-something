@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stool.io Ultimate v13.3</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="canvas-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="minimap-container"><canvas id="minimap-canvas" width="130" height="130"></canvas></div>
+
+    <!-- Главное меню -->
+    <div id="menu-overlay" class="overlay">
+        <div class="card">
+            <h1>STOOL.IO v13.3</h1>
+            <p>Управляй боевым стулом, круши врагов и стань Царь-Табуретом!<br>
+            <b>Атака:</b> ЛКМ | <b>Монета во врага:</b> ПКМ / R | <b>Рывок:</b> Q / Shift | <b>Удар сверху:</b> Пробел</p>
+            
+            <div class="mode-select-box">
+                <label>⚔️ ВЫБЕРИТЕ ОРУЖИЕ:</label>
+                <select id="weapon-select">
+                    <option value="wrench">🔧 Шестигранник IKEA (Бросает рикошетящие гайки)</option>
+                    <option value="coin_gun">🪙🔫 Монетный Пистолет (ЛКМ — выстрел, ПКМ — монета во врага)</option>
+                    <option value="sword">🗡️ Меч Рыцаря (Баланс, быстрый размах)</option>
+                    <option value="hammer">🔨 Боевой Молот (Тяжелый урон + AOE волна)</option>
+                    <option value="spear">🔱 Длинное Копье (Дальний выпад вперед)</option>
+                    <option value="axe">🪓 Боевой Топор (Круговой рассекатель)</option>
+                    <option value="daggers">🗡️🗡️ Парные Кинжалы (Сверхбыстрые удары)</option>
+                    <option value="katana">⚔️ Катана Самурая (Резкий выпад)</option>
+                    <option value="staff">🔮 Магический Посох (Магические сферы)</option>
+                </select>
+            </div>
+
+            <div class="mode-select-box">
+                <label>🕹️ ТИП УПРАВЛЕНИЯ:</label>
+                <select id="control-scheme-select">
+                    <option value="universal">🕹️ Универсальное (WASD / Стрелки / Мышь)</option>
+                    <option value="wasd_mouse">⌨️🖱️ WASD + Мышь (Бег на WASD, прицел мышью)</option>
+                    <option value="arrows_mouse">⬅️➡️🖱️ Стрелочки + Мышь</option>
+                    <option value="mouse_only">🖱️ Только Мышь</option>
+                    <option value="keyboard_only">⌨️ Только Клавиатура (F/E/Space)</option>
+                </select>
+            </div>
+
+            <div class="mode-select-box">
+                <label>🧪 ВЫБЕРИТЕ РЕЖИМ БИТВЫ:</label>
+                <select id="game-mode-select">
+                    <option value="classic">🧪 Классическая Арена</option>
+                    <option value="swarm">🪲 Нашествие Насекомых (Орда)</option>
+                    <option value="bossrush">🛋️ Битва Титанов (Босс-Раш)</option>
+                    <option value="royale">⚡ Королевская Битва (Сужение зоны)</option>
+                    <option value="hardcore">☠️ Хардкор (3 Жизни, x2 Золото)</option>
+                </select>
+            </div>
+
+            <input type="text" id="player-name" value="Дубовый Воин" maxlength="25">
+
+            <button class="btn" onclick="startGame()">В БОЙ!</button>
+            <button class="btn btn-sec" onclick="openShopMenu()">МАГАЗИН И СПОСОБНОСТИ 🛒</button>
+
+            <!-- Ручные сейвы (без фонового автосейва) -->
+            <div class="save-controls-row">
+                <button class="btn btn-save" onclick="exportSaveFile()">💾 Скачать сейв</button>
+                <button class="btn btn-save" onclick="document.getElementById('save-file-input').click()">📂 Загрузить сейв</button>
+                <input type="file" id="save-file-input" style="display:none" accept=".json" onchange="importSaveFile(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка левелапа -->
+    <div id="level-up-modal" class="overlay">
+        <div class="card" style="width: 720px; max-width: 95vw;">
+            <h1 style="color: #38bdf8;">ПОВЫШЕНИЕ УРОВНЯ!</h1>
+            <p>Игра на паузе! Выберите карточку усиления:</p>
+            <div class="upgrade-grid-3" id="level-up-choices"></div>
+        </div>
+    </div>
+
+    <!-- Магазин (сетка квадратов + инспектор) -->
+    <div id="shop-modal" class="overlay">
+        <div class="card" style="width: 660px; max-width: 96vw;">
+            <h1>Магазин и Способности v13.3</h1>
+            <p>Монеты: <span id="shop-coins">0</span> 🪙</p>
+            
+            <div class="shop-tabs">
+                <button class="tab-btn active" id="tab-upgrades-btn" onclick="switchShopTab('upgrades')">⚡ Способности</button>
+                <button class="tab-btn" id="tab-super-btn" onclick="switchShopTab('super')" style="color: #c084fc; border-color: #9333ea;">👑 Супер-Оружие</button>
+                <button class="tab-btn" id="tab-hats-btn" onclick="switchShopTab('hats')">🎩 Шляпы</button>
+                <button class="tab-btn" id="tab-colors-btn" onclick="switchShopTab('colors')">🎨 Цвета</button>
+            </div>
+
+            <div id="shop-content-area"></div>
+            <button class="btn" style="margin-top: 10px;" onclick="toggleShop(false)">ПРОДОЛЖИТЬ ИГРУ</button>
+        </div>
+    </div>
+
+    <!-- Game Over -->
+    <div id="game-over-modal" class="overlay">
+        <div class="card">
+            <h1 style="color: #ef4444;">ТЕБЯ РАЗБИЛИ!</h1>
+            <p id="game-over-desc">Твой стул рассыпался на мелкие опилки...</p>
+            <button class="btn" onclick="restartGame()">ПОПРОБОВАТЬ СНОВА</button>
+            <button class="btn btn-sec" onclick="exitToMainMenu()">В ГЛАВНОЕ МЕНЮ 🏠</button>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div id="stats-hud" class="hud-panel">
+            <div id="hud-mode-badge" style="color: #fbbf24; font-size:12px; margin-bottom:3px;">Режим: Классика</div>
+            <div id="hud-weapon-badge" style="color: #38bdf8; font-size:11px; margin-bottom:2px;">Оружие: Шестигранник</div>
+            <div id="hud-control-badge" style="color: #a78bfa; font-size:11px; margin-bottom:4px;">Управление: WASD + Мышь</div>
+            <div id="hud-lives-badge" style="display:none; color: #f43f5e; font-size:12px; margin-bottom:3px;">Жизни: ❤️❤️❤️</div>
+            <div>Уровень: <span id="hud-lvl">1</span></div>
+            <div>XP: <span id="hud-xp-val">0/50</span></div>
+            <div class="xp-container"><div id="hud-xp-bar" class="xp-bar"></div></div>
+            <div style="margin-top:5px;">Здоровье: <span id="hud-hp">100/100</span></div>
+            <div>Монеты: <span id="hud-coins">0</span> 🪙</div>
+            <div style="font-size:11px; color:#38bdf8; margin-top:3px;" id="hud-bow-status">🏹 Лук: Выключен</div>
+            <div style="font-size:11px; color:#f59e0b; margin-top:1px;" id="hud-saw-status">⚙️ Пила: Выключена</div>
+            <div style="font-size:11px; color:#f43f5e; margin-top:1px;" id="hud-dash-status">⚡ Рывок (Q): Готов</div>
+            <div style="font-size:11px; color:#a855f7; margin-top:1px;" id="hud-stomp-status">🛑 Удар (Space): Готов</div>
+        </div>
+
+        <div id="timer-hud" class="hud-panel">
+            <div id="timer-title">Босс через: <span id="boss-timer">05:00</span></div>
+            <button id="btn-force-boss" style="margin-top: 4px; font-size: 11px; padding: 4px 8px; cursor: pointer; background: #f43f5e; border: none; color: white; border-radius: 4px;" onclick="forceBoss()">Призвать Босса</button>
+        </div>
+
+        <div id="menu-hud-btn" class="hud-panel" style="top: 16px; right: 135px; cursor: pointer; color: #f43f5e;" onclick="exitToMainMenu()">🏠 В меню</div>
+        <div id="shop-hud-btn" class="hud-panel" onclick="openShopMenu()">🛒 Магазин</div>
+    </div>
+</div>
+
+<script src="audio.js"></script>
+<script src="data.js"></script>
+<script src="entities.js"></script>
+<script src="game.js"></script>
+
+</body>
+</html>
